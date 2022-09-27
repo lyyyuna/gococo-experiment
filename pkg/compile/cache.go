@@ -22,9 +22,9 @@ const (
 //
 // the cache layout:
 //
-//	.gococo				 // cacheRootDir
-//	  ├─ project            // cacheDir
-//	  └─ digest.modtime  // digest file
+//	.gococo					// cacheRootDir
+//	  ├─ project			// cacheDir
+//	  └─ digest.modtime		// digest file
 type cache struct {
 	// the path for the digest file
 	digestFilePath string
