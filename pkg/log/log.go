@@ -18,6 +18,10 @@ func Donef(format string, args ...interface{}) {
 	g.Donef(format, args...)
 }
 
+func Debugf(format string, args ...interface{}) {
+	g.Debugf(format, args...)
+}
+
 func Infof(format string, args ...interface{}) {
 	g.Infof(format, args...)
 }
