@@ -221,8 +221,11 @@ func (bc *cache) doRealCopy() {
 	for _, pkg := range bc.pkgs {
 		if modFile == "" {
 			modFile = pkg.Module.GoMod
+			srcFiles = append(srcFiles, modFile)
 			sumFile := filepath.Join(bc.targetDir, "go.sum")
-			srcFiles = append(srcFiles, modFile, sumFile)
+			if _, err := os.Lstat(sumFile); err == nil {
+				srcFiles = append(srcFiles, sumFile)
+			}
 		}
 		srcFiles = append(srcFiles, bc.sourceFiles(pkg)...)
 	}
