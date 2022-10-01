@@ -1,6 +1,9 @@
 package cmd
 
-import "github.com/spf13/cobra"
+import (
+	"github.com/lyyyuna/gococo/pkg/compile"
+	"github.com/spf13/cobra"
+)
 
 var buildCmd = &cobra.Command{
 	Use:                "build",
@@ -9,7 +12,10 @@ var buildCmd = &cobra.Command{
 }
 
 func buildAction(cmd *cobra.Command, args []string) {
-
+	compile.NewCompile(
+		compile.WithBuild(),
+		compile.WithArgs(args),
+	)
 }
 
 func init() {

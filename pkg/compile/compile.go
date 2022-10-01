@@ -86,7 +86,7 @@ func WithRun() Option {
 }
 
 // WithArgs specifies the original compile arguments.
-func WithArgs(args ...string) Option {
+func WithArgs(args []string) Option {
 	return func(c *Compile) {
 		c.oriArgs = append(c.oriArgs, args...)
 	}
@@ -121,6 +121,12 @@ func NewCompile(opts ...Option) *Compile {
 		log.Fatalf("fail to lock the project: %v", err)
 	}
 	defer compileLock.Unlock()
+
+	cache := newCache(c.curProjectRootDir,
+		withPackage(c.pkgs),
+	)
+	cache.doCopy()
+	cache.saveDigest()
 
 	return c
 }
