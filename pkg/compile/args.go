@@ -117,7 +117,3 @@ type goConfig struct {
 	ModCacheRW bool
 	ModFile    string
 }
-
-func (c *Compile) getPackages() {
-
-}

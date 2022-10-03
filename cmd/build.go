@@ -12,10 +12,11 @@ var buildCmd = &cobra.Command{
 }
 
 func buildAction(cmd *cobra.Command, args []string) {
-	compile.NewCompile(
+	c := compile.NewCompile(
 		compile.WithBuild(),
 		compile.WithArgs(args),
 	)
+	c.Build()
 }
 
 func init() {

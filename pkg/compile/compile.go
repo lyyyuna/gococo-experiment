@@ -2,6 +2,7 @@ package compile
 
 import (
 	"os"
+	"os/exec"
 	"path/filepath"
 	"time"
 
@@ -103,6 +104,9 @@ type modProject struct {
 
 	// isVendor tells if the project is in vendor mod
 	isVendor bool
+
+	// isModEdit tells if the go.mod file is updated
+	isModEdit bool
 }
 
 // Option represents a compile option
@@ -189,5 +193,36 @@ func NewCompile(opts ...Option) *Compile {
 	// update the go mod file
 	c.updateGoModGoWorkFile()
 
+	// revendor
+	c.reVendor()
+
 	return c
+}
+
+// reVendor, if the go.mod file is changed, the project needs to revendor
+func (c *Compile) reVendor() {
+
+	do := func(dir string) {
+		log.StartWait("re-vendoring the project")
+		cmd := exec.Command("go", "mod", "vendor")
+		cmd.Dir = dir
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+
+		if err := cmd.Start(); err != nil {
+			log.Fatalf("fail to execute go vendor: %v", err)
+		}
+		if err := cmd.Wait(); err != nil {
+			log.Fatalf("fail to execute go vendor: %v", err)
+		}
+
+		log.StopWait()
+		log.Donef("re-vendor the project done")
+	}
+
+	for _, m := range c.modulePaths {
+		if c.buildMod == "vendor" && m.isVendor && m.isModEdit {
+			do(m.tmpPath)
+		}
+	}
 }

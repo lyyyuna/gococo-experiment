@@ -18,6 +18,9 @@ def test_basic_go_work_build(tmp_path):
     assert res.stdout.find(b'information parsed') > 0
 
     logging.info("check the built binary")
+    res = subprocess.run(["./haha"], capture_output=True, cwd=tmp_path)
+    assert res.returncode == 0
+    assert res.stdout.find(b'world') > 0
 
     logging.info("check the second compile")
     res = subprocess.run(["gococo", "build", "-o", "haha", "example.com/hello"], capture_output=True, cwd=tmp_path)

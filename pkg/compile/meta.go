@@ -188,10 +188,10 @@ func (c *Compile) transformMetaInfoInCache(tmpBase string) {
 		if m.inRootProject {
 			// we have checked before, so ignore err here
 			rel, _ := filepath.Rel(c.curProjectRootDir, m.path)
-			m.tmpPath = filepath.Join(c.curProjectRootDir, rel)
+			m.tmpPath = filepath.Join(c.tmpProjectRootDir, rel)
 
 			rel, _ = filepath.Rel(c.curProjectRootDir, m.gomodPath)
-			m.tmpGomodPath = filepath.Join(c.curProjectRootDir, rel)
+			m.tmpGomodPath = filepath.Join(c.tmpProjectRootDir, rel)
 		}
 	}
 }
@@ -261,14 +261,17 @@ func (c *Compile) getModulePathFromGoMod(path string) *modProject {
 		log.Fatalf("cannot parse go.mod: %v", err)
 	}
 
-	absPath := filepath.Dir(path)
+	absPath, _ := filepath.Abs(filepath.Dir(path))
 	var inRootProject bool
-	if util.SubElem(absPath, c.curProjectRootDir) {
+	if util.SubElem(c.curProjectRootDir, absPath) {
 		inRootProject = true
 	}
+
+	absGomodPath, _ := filepath.Abs(path)
+
 	return &modProject{
 		path:          absPath,
-		gomodPath:     path,
+		gomodPath:     absGomodPath,
 		inRootProject: inRootProject,
 		modulePath:    goModFile.Module.Mod.Path,
 		isVendor:      c.checkIfVendor(path),
@@ -446,6 +449,7 @@ func (c *Compile) updateGoModGoWorkFile() {
 			if err != nil {
 				log.Fatalf("fail to update go.mod: %v", err)
 			}
+			m.isModEdit = true
 		}
 	}
 }
