@@ -1,5 +1,5 @@
 package compile
 
-func (c *Compile) newBuild() {
+func (c *Compile) build() {
 
 }

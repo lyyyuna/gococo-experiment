@@ -20,5 +20,7 @@ class Sample():
         '''
         for path, content in self.files.items():
             filepath = os.path.join(base, path)
+            filepath_dir = os.path.dirname(filepath)
+            os.makedirs(name=filepath_dir, exist_ok=True)
             with open(filepath, 'w+') as f:
                 f.write(content)

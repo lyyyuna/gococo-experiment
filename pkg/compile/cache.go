@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	CACHE_ROOT_DIR = ".gococo"
+	CACHE_ROOT_DIR = ".gococo_cache"
 	CACHE_DIGEST   = "digest.modtime"
 )
 
@@ -52,6 +52,9 @@ type cache struct {
 
 	// package information of the project
 	pkgs []*Package
+
+	// importPaths
+	importPaths map[string]*modProject
 }
 
 type cacheOption func(*cache)
@@ -68,6 +71,12 @@ func withPackage(pkgs map[string]*Package) cacheOption {
 		for _, pkg := range pkgs {
 			bc.pkgs = append(bc.pkgs, pkg)
 		}
+	}
+}
+
+func withImportPaths(importPaths map[string]*modProject) cacheOption {
+	return func(bc *cache) {
+		bc.importPaths = importPaths
 	}
 }
 
@@ -94,7 +103,7 @@ func newCache(target string, opts ...cacheOption) *cache {
 		bc.cacheRootDir = filepath.Join(target, CACHE_ROOT_DIR)
 	}
 
-	bc.cacheDir = filepath.Join(bc.cacheRootDir, "porject")
+	bc.cacheDir = filepath.Join(bc.cacheRootDir, "project")
 	bc.digestFilePath = filepath.Join(bc.cacheRootDir, CACHE_DIGEST)
 
 	// skip self
@@ -111,6 +120,11 @@ func newCache(target string, opts ...cacheOption) *cache {
 // Refreshed tells if the cache is refreshed
 func (bc *cache) Refreshed() bool {
 	return bc.needsRefresh
+}
+
+// GetProjectDir gets the temporary project in the cache
+func (bc *cache) GetProjectDir() string {
+	return bc.cacheDir
 }
 
 func (bc *cache) doCopy() {
@@ -217,23 +231,38 @@ func (bc *cache) getNewDigest() {
 
 func (bc *cache) doRealCopy() {
 	srcFiles := make([]string, 0)
-	modFile := ""
-	for _, pkg := range bc.pkgs {
-		if modFile == "" {
-			modFile = pkg.Module.GoMod
+
+	// copy go.mod & go.sum
+	for _, importPath := range bc.importPaths {
+		// only copy those in the current root project
+		if importPath.inRootProject {
+			modFile := filepath.Join(importPath.path, "go.mod")
 			srcFiles = append(srcFiles, modFile)
-			sumFile := filepath.Join(bc.targetDir, "go.sum")
+
+			sumFile := filepath.Join(importPath.path, "go.sum")
 			if _, err := os.Lstat(sumFile); err == nil {
 				srcFiles = append(srcFiles, sumFile)
 			}
+		} else {
+			log.Infof("skip coping [%v] in [%v], as it is not the same directory with the go.work", importPath.modulePath, importPath.path)
 		}
+	}
+
+	// copy go.work if exist
+	workFile := filepath.Join(bc.targetDir, "go.work")
+	if _, err := os.Lstat(workFile); err == nil {
+		srcFiles = append(srcFiles, workFile)
+	}
+
+	// copy all source files
+	for _, pkg := range bc.pkgs {
 		srcFiles = append(srcFiles, bc.sourceFiles(pkg)...)
 	}
 
 	for _, src := range srcFiles {
 		relPath, err := filepath.Rel(bc.targetDir, src)
 		if err != nil {
-			log.Fatalf("the file: %v is not in the project directory, gococo currently cannot deal with such file", src)
+			log.Fatalf("the file: %v, %v is not in the project directory, gococo currently cannot deal with such file", src, bc.targetDir)
 		}
 
 		dst := filepath.Join(bc.cacheDir, relPath)

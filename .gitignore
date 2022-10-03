@@ -15,6 +15,6 @@
 # vendor/
 
 # gococo
-.gococo/
+.gococo_cache/
 .gococo.lock
 gococo
