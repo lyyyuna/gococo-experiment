@@ -17,7 +17,7 @@ var depTarFile embed.FS
 // AddCustomWebsocketDep injects custom gorrila/websocket library into the temporary directory
 //
 //  1. untar websocket.tar from the embed file system
-//  2. the websocket library is has no other dependency, appropriate for injecting
+//  2. the websocket library has no 3rd dependency, appropriate for injecting
 func AddCustomWebsocketDep(customWebsocketPath string) {
 	data, err := depTarFile.ReadFile("websocket.tar")
 	if err != nil {
