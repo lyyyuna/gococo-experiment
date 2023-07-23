@@ -2,11 +2,14 @@ package compile
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -33,6 +36,7 @@ type FileVar struct {
 // this is subset of package struct in: https://github.com/golang/go/blob/master/src/cmd/go/internal/load/pkg.go#L58
 type Package struct {
 	Dir        string `json:"Dir"`        // directory containing package sources
+	tmpDir     string `json:",omitempty"` // add by lyyyuna
 	ImportPath string `json:"ImportPath"` // import path of package in dir
 	Name       string `json:"Name"`       // package name
 	Target     string `json:",omitempty"` // installed target for this package (may be executable)
@@ -159,7 +163,9 @@ func (c *Compile) readProjectMetaInfo() {
 
 	c.pkgs = make(map[string]*Package)
 	for _, m := range modulePaths {
-		maps.Copy(c.pkgs, c.listPackages(m.path))
+		ps := c.listPackages(m.path)
+		m.pkgs = ps
+		maps.Copy(c.pkgs, ps)
 	}
 }
 
@@ -177,6 +183,13 @@ func (c *Compile) displayProjectMetaInfo() {
 	}
 }
 
+func injectPkgImportpath(p string) string {
+	sum := sha256.Sum256([]byte(p))
+	h := fmt.Sprintf("%x", sum[:6])
+
+	return path.Join(p, "gococo"+h)
+}
+
 // transformMetaInfoInCache, transforms the original meta info to match the temporary directory
 func (c *Compile) transformMetaInfoInCache(tmpBase string) {
 	c.tmpProjectRootDir = tmpBase
@@ -192,6 +205,11 @@ func (c *Compile) transformMetaInfoInCache(tmpBase string) {
 
 			rel, _ = filepath.Rel(c.curProjectRootDir, m.gomodPath)
 			m.tmpGomodPath = filepath.Join(c.tmpProjectRootDir, rel)
+
+			for _, pkg := range m.pkgs {
+				rel, _ := filepath.Rel(m.path, pkg.Dir)
+				pkg.tmpDir = filepath.Join(m.tmpPath, rel)
+			}
 		}
 	}
 }
@@ -270,11 +288,12 @@ func (c *Compile) getModulePathFromGoMod(path string) *modProject {
 	absGomodPath, _ := filepath.Abs(path)
 
 	return &modProject{
-		path:          absPath,
-		gomodPath:     absGomodPath,
-		inRootProject: inRootProject,
-		modulePath:    goModFile.Module.Mod.Path,
-		isVendor:      c.checkIfVendor(path),
+		path:                absPath,
+		gomodPath:           absGomodPath,
+		inRootProject:       inRootProject,
+		modulePath:          goModFile.Module.Mod.Path,
+		isVendor:            c.checkIfVendor(path),
+		injectPkgImportpath: injectPkgImportpath(goModFile.Module.Mod.Path),
 	}
 }
 

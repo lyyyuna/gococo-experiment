@@ -68,7 +68,7 @@ type Compile struct {
 	// tmpProjectRootDir represents the corresponding project directory in the cache
 	tmpProjectRootDir string
 
-	// pkgs
+	// pkgs contains all information of this project
 	pkgs map[string]*Package
 }
 
@@ -107,6 +107,12 @@ type modProject struct {
 
 	// isModEdit tells if the go.mod file is updated
 	isModEdit bool
+
+	// pkgs information of this [module-path]
+	pkgs map[string]*Package
+
+	// injectPkgImportpath is the [import-path] of the injected code
+	injectPkgImportpath string
 }
 
 // Option represents a compile option
